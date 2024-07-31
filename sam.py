@@ -1,34 +1,46 @@
-import os
-from datetime import datetime
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Border, Side
 
-# Create folder to place all files in local
+def create_test_result_file(test_scenario_df, tla, env, ROOT_DIR, usernames, source_conn, target_conn, source_host, target_host, tre_userlist):
+    TEMP_FILE_NAME = 'C:\\SVAU VI Techrem\\automation_sv_setup\\2019_templates\\2019 TLA ENV Test Report Structural Validation.xlsx'
+    print("TEMP FILE NAME line 441:", TEMP_FILE_NAME)
 
-def create_tla_folder(tla, env):
-    # Ensure start_time is defined, e.g., start_time = datetime.now()
-    start_time = datetime.now()  # Example definition
-    date_time = start_time.strftime("%Y-%m-%d_%H-%M-%S")
+    test_file = "test file tla env Test Report Structural Validation.xlsx"
+    test_file_loc = os.path.join(ROOT_DIR, test_file)
 
-    FOLDER_NAME = tla + ' ' + env + "_" + date_time
-    ROOT_DIR = os.path.join(MAIN_ROOT_DIR, FOLDER_NAME)
+    try:
+        # Load workbook
+        wb = load_workbook(filename=TEMP_FILE_NAME)
 
-    if not os.path.exists(ROOT_DIR):
-        os.makedirs(ROOT_DIR)
-        print(f'Created {ROOT_DIR} folder successfully')
+        # Creating border format
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
 
-    atmn_path = os.path.join(ROOT_DIR, 'Automation')
-    os.makedirs(atmn_path)
+        # Sheet: Test Summary [0]
+        ws0 = wb.worksheets[0]
 
-    atr_folder_name = tla + env + ' ATR Reports'
-    atr_report_path = os.path.join(atmn_path, atr_folder_name)
-    os.makedirs(atr_report_path)
+        # Read data from TEMP_FILE_NAME
+        ts_df = pd.read_excel(TEMP_FILE_NAME, sheet_name="Test Summary")
 
-    sd_path = os.path.join(ROOT_DIR, 'Source Data')
-    os.makedirs(sd_path)
+        # Replace placeholders in DataFrame
+        ts_df['tc_name'] = ts_df['tc_name'].str.replace("<TLA>", tla)
+        ts_df['tc_name'] = ts_df['tc_name'].str.replace("<ENV>", env)
 
-    atr_reports_cl_path = os.path.join(atr_report_path, 'Cycle 1')
-    atr_reports_c2_path = os.path.join(atr_report_path, 'Cycle 2')
+        # Write data to the Excel sheet
+        for i in range(len(ts_df)):
+            cell = "A" + str(i + 2)
+            ws0[cell] = ts_df.iloc[i]['tc_name']
+            # Apply border format
+            ws0[cell].border = border
 
-    os.makedirs(atr_reports_cl_path)
-    os.makedirs(atr_reports_c2_path)
+        # Save the workbook to the new location
+        wb.save(test_file_loc)
+        print(f"File saved to {test_file_loc}")
 
-    return ROOT_DIR, atmn_path
+    except Exception as e:
+        print(f"An error occurred: {e}")
